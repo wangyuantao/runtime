@@ -8,7 +8,6 @@ using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Runtime;
-using System.Text;
 using Xunit;
 
 namespace Microsoft.Extensions.Configuration.Binder.Test
@@ -1238,48 +1237,16 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
         }
 
         [Fact]
-        public void ReproSlow()
+        public void BindStringDictionaryLarge()
         {
-            var builder = new ConfigurationBuilder();
-            for (int i = 0; i < 10; i++)
-            {
-                var s = new MySettings
-                {
-                    Foo = "root",
-                    Bar = int.MaxValue,
-                    SubSettings = new Dictionary<string, MySettings>
-                    {
-                        ["level 1 key " + i] = new MySettings
-                        {
-                            Foo = "foo" + i,
-                            Bar = i,
-                            SubSettings = new Dictionary<string, MySettings>
-                            {
-                                ["level 2 key " + i] = new MySettings
-                                {
-                                    Foo = "just a simple 2 level tree settings " + i,
-                                    Bar = 2 * i,
-                                }
-                            }
-                        }
-                    }
-                };
-                var jsonString = JsonConvert.SerializeObject(s);
-                for (var j = 0; j < 5; j++)
-                {
-                    builder.AddInMemoryCollection()
-                }
-            }
+            var input = Enumerable.Range(0, 1000).ToDictionary(i => $"StringDictionary:k{i}", i => $"val{i}");
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(input);
+            var config = configurationBuilder.Build();
 
-            var _configuration = builder.Build();
-            _configuration.Get<MySettings>();
-        }
-
-        public class MySettings
-        {
-            public string Foo { get; set; }
-            public int Bar { get; set; }
-            public IDictionary<string, MySettings> SubSettings { get; set; }
+            var options = new Dictionary<string, string>();
+            config.GetSection("StringDictionary").Bind(options);
+            Assert.Equal(input.Count, options.Count);
         }
 
         [Fact]
