@@ -5,7 +5,10 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.IO;
 using System.Linq;
+using System.Runtime;
+using System.Text;
 using Xunit;
 
 namespace Microsoft.Extensions.Configuration.Binder.Test
@@ -1232,6 +1235,51 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             Assert.Equal("val1", list[1]);
             Assert.Equal("val2", list[2]);
             Assert.Equal("valx", list[3]);
+        }
+
+        [Fact]
+        public void ReproSlow()
+        {
+            var builder = new ConfigurationBuilder();
+            for (int i = 0; i < 10; i++)
+            {
+                var s = new MySettings
+                {
+                    Foo = "root",
+                    Bar = int.MaxValue,
+                    SubSettings = new Dictionary<string, MySettings>
+                    {
+                        ["level 1 key " + i] = new MySettings
+                        {
+                            Foo = "foo" + i,
+                            Bar = i,
+                            SubSettings = new Dictionary<string, MySettings>
+                            {
+                                ["level 2 key " + i] = new MySettings
+                                {
+                                    Foo = "just a simple 2 level tree settings " + i,
+                                    Bar = 2 * i,
+                                }
+                            }
+                        }
+                    }
+                };
+                var jsonString = JsonConvert.SerializeObject(s);
+                for (var j = 0; j < 5; j++)
+                {
+                    builder.AddInMemoryCollection()
+                }
+            }
+
+            var _configuration = builder.Build();
+            _configuration.Get<MySettings>();
+        }
+
+        public class MySettings
+        {
+            public string Foo { get; set; }
+            public int Bar { get; set; }
+            public IDictionary<string, MySettings> SubSettings { get; set; }
         }
 
         [Fact]
