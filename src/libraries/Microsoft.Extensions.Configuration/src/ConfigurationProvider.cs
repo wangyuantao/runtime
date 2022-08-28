@@ -88,7 +88,7 @@ namespace Microsoft.Extensions.Configuration
 
             results.AddRange(earlierKeys);
 
-            results.Sort(ConfigurationKeyComparer.Comparison);
+            ////results.Sort(ConfigurationKeyComparer.Comparison);
 
             return results;
         }
