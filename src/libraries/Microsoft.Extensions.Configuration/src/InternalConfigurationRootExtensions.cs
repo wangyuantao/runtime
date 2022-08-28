@@ -22,10 +22,13 @@ namespace Microsoft.Extensions.Configuration
         {
             using ReferenceCountedProviders? reference = (root as ConfigurationManager)?.GetProvidersReference();
             IEnumerable<IConfigurationProvider> providers = reference?.Providers ?? root.Providers;
+            var keys = new List<string>();
+            foreach (IConfigurationProvider provider in providers)
+            {
+                keys.AddRange(provider.GetChildKeys(Enumerable.Empty<string>(), path));
+            }
 
-            IEnumerable<IConfigurationSection> children = providers
-                .Aggregate(Enumerable.Empty<string>(),
-                    (seed, source) => source.GetChildKeys(seed, path))
+            IEnumerable<IConfigurationSection> children = keys
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .Select(key => root.GetSection(path == null ? key : ConfigurationPath.Combine(path, key)));
 
